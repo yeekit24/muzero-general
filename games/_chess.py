@@ -7,7 +7,6 @@ import torch
 
 from .abstract_game import AbstractGame
 import chess
-from stockfish import Stockfish
 from tqdm import tqdm
 import random
 
@@ -232,10 +231,8 @@ class Game(AbstractGame):
         return self.env.play_mode(mode, games, verbose)
 
 class Chess:
-    def __init__(self, elo=2000):
+    def __init__(self):
         self._board = chess.Board()
-        self._stockfish = Stockfish(parameters={"Threads": 2, "Minimum Thinking Time": 30})
-        self._stockfish.set_elo_rating(elo)
 
     def to_play(self):
         # return 1/True for white and -1/False for black
@@ -328,6 +325,9 @@ class Chess:
         return move
 
     def expert_agent(self):
+        from stockfish import Stockfish
+        self._stockfish = Stockfish(parameters={"Threads": 2, "Minimum Thinking Time": 30})
+        self._stockfish.set_elo_rating(elo)
         self._stockfish.set_fen_position(self._board.fen())
         uci_move = self._stockfish.get_best_move()
         move = self._move_from_uci(uci_move.strip())
