@@ -628,6 +628,7 @@ if __name__ == "__main__":
                 "Play against MuZero",
                 "Test the game manually",
                 "Hyperparameter search",
+                "Random Play",
                 "Exit",
             ]
             print()
@@ -674,6 +675,12 @@ if __name__ == "__main__":
                     game_name, parametrization, budget, parallel_experiments, 20
                 )
                 muzero = MuZero(game_name, best_hyperparameters)
+            elif choice == 7:
+                env = muzero.Game()
+                games = 100 # input("Total Games: ")
+                mode = 1 # input("")
+                env.reset()
+                env.play_mode(mode, games, False)
             else:
                 break
             print("\nDone")
