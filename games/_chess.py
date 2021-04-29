@@ -32,8 +32,8 @@ class MuZeroConfig:
 
 
         ### Self-Play
-        self.num_workers = 2  # Number of simultaneous threads/workers self-playing to feed the replay buffer
-        self.selfplay_on_gpu = False
+        self.num_workers = 6  # Number of simultaneous threads/workers self-playing to feed the replay buffer
+        self.selfplay_on_gpu = True
         self.max_moves = 3000  # Maximum number of moves if game is not finished before
         self.num_simulations = 800  # Number of future moves self-simulated
         self.discount = 0  # Chronological discount of the reward
@@ -88,7 +88,7 @@ class MuZeroConfig:
         self.momentum = 0.9  # Used only if optimizer is SGD
 
         # Exponential learning rate schedule
-        self.lr_init = 0.002  # Initial learning rate
+        self.lr_init = 0.02  # Initial learning rate
         self.lr_decay_rate = 0.9  # Set it to 1 to use a constant learning rate
         self.lr_decay_steps = 10000
 
