@@ -34,8 +34,8 @@ class MuZeroConfig:
         ### Self-Play
         self.num_workers = 2  # Number of simultaneous threads/workers self-playing to feed the replay buffer
         self.selfplay_on_gpu = False
-        self.max_moves = 300  # Maximum number of moves if game is not finished before
-        self.num_simulations = 100  # Number of future moves self-simulated
+        self.max_moves = 3000  # Maximum number of moves if game is not finished before
+        self.num_simulations = 800  # Number of future moves self-simulated
         self.discount = 0  # Chronological discount of the reward
         self.temperature_threshold = None  # Number of moves before dropping the temperature given by visit_softmax_temperature_fn to 0 (ie selecting the best action). If None, visit_softmax_temperature_fn is used every time
 
@@ -79,7 +79,7 @@ class MuZeroConfig:
         self.save_model = True  # Save the checkpoint in results_path as model.checkpoint
         self.training_steps = 10000  # Total number of training steps (ie weights update according to a batch)
         self.batch_size = 512  # Number of parts of games to train on at each training step
-        self.checkpoint_interval = 1  # Number of training steps before using the model for self-playing
+        self.checkpoint_interval = 1000  # Number of training steps before using the model for self-playing
         self.value_loss_weight = 1  # Scale the value loss to avoid overfitting of the value function, paper recommends 0.25 (See paper appendix Reanalyze)
         self.train_on_gpu = torch.cuda.is_available()  # Train on GPU if available
 
@@ -266,10 +266,10 @@ class Chess:
         if outcome is not None:
             if outcome.winner is None:
                 # draw return very little value
-                print(f"Draw")
+                #nprint(f"Draw")
                 return 1e-4
             else:
-                print(f"{outcome.winner} Win")
+                # print(f"{outcome.winner} Win")
                 return self._who(outcome.winner)
         return 0
 
