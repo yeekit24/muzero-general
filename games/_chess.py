@@ -266,10 +266,10 @@ class Chess:
         if outcome is not None:
             if outcome.winner is None:
                 # draw return very little value
-                #nprint(f"Draw")
+                print(f"Draw")
                 return 1e-4
             else:
-                # print(f"{outcome.winner} Win")
+                print(f"{outcome.winner} Win")
                 return self._who(outcome.winner)
         return 0
 
