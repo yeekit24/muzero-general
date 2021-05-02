@@ -17,10 +17,8 @@ class MuZeroConfig:
         self.seed = 0  # Seed for numpy, torch and the game
         self.max_num_gpus = None  # Fix the maximum number of GPUs to use. It's usually faster to use a single GPU (set it to 1) if it has enough memory. None will use every GPUs available
 
-
-
         ### Game
-        self.observation_shape = (1, 1, 64)  # Dimensions of the game observation, must be 3 (channel, height, width). For a 1D array, please reshape it to (1, 1, length of array)
+        self.observation_shape = (3, 8, 8)  # Dimensions of the game observation, must be 3 (channel, height, width). For a 1D array, please reshape it to (1, 1, length of array)
         self.action_space = list(range(64 * 64))  # Fixed list of all possible actions. You should only edit the length
         self.players = list(range(2))  # List of players. You should only edit the length
         self.stacked_observations = 0  # Number of previous observations and previous actions to add to the current observation
@@ -29,14 +27,12 @@ class MuZeroConfig:
         self.muzero_player = 0  # Turn Muzero begins to play (0: MuZero plays first, 1: MuZero plays second)
         self.opponent = "random"  # Hard coded agent that MuZero faces to assess his progress in multiplayer games. It doesn't influence training. None, "random" or "expert" if implemented in the Game class
 
-
-
         ### Self-Play
-        self.num_workers = 6  # Number of simultaneous threads/workers self-playing to feed the replay buffer
+        self.num_workers = 2  # Number of simultaneous threads/workers self-playing to feed the replay buffer
         self.selfplay_on_gpu = True
         self.max_moves = 3000  # Maximum number of moves if game is not finished before
-        self.num_simulations = 800  # Number of future moves self-simulated
-        self.discount = 0  # Chronological discount of the reward
+        self.num_simulations = 50  # Number of future moves self-simulated
+        self.discount = 1  # Chronological discount of the reward
         self.temperature_threshold = None  # Number of moves before dropping the temperature given by visit_softmax_temperature_fn to 0 (ie selecting the best action). If None, visit_softmax_temperature_fn is used every time
 
         # Root prior exploration noise
@@ -46,8 +42,6 @@ class MuZeroConfig:
         # UCB formula
         self.pb_c_base = 19652
         self.pb_c_init = 1.25
-
-
 
         ### Network
         self.network = "resnet"  # "resnet" / "fullyconnected"
@@ -73,12 +67,11 @@ class MuZeroConfig:
         self.fc_policy_layers = []  # Define the hidden layers in the policy network
 
 
-
         ### Training
         self.results_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "../results", os.path.basename(__file__)[:-3], datetime.datetime.now().strftime("%Y-%m-%d--%H-%M-%S"))  # Path to store the model weights and TensorBoard logs
         self.save_model = True  # Save the checkpoint in results_path as model.checkpoint
         self.training_steps = 10000  # Total number of training steps (ie weights update according to a batch)
-        self.batch_size = 512  # Number of parts of games to train on at each training step
+        self.batch_size = 1  # Number of parts of games to train on at each training step
         self.checkpoint_interval = 1000  # Number of training steps before using the model for self-playing
         self.value_loss_weight = 1  # Scale the value loss to avoid overfitting of the value function, paper recommends 0.25 (See paper appendix Reanalyze)
         self.train_on_gpu = torch.cuda.is_available()  # Train on GPU if available
@@ -88,14 +81,12 @@ class MuZeroConfig:
         self.momentum = 0.9  # Used only if optimizer is SGD
 
         # Exponential learning rate schedule
-        self.lr_init = 0.02  # Initial learning rate
+        self.lr_init = 0.002  # Initial learning rate
         self.lr_decay_rate = 0.9  # Set it to 1 to use a constant learning rate
         self.lr_decay_steps = 10000
 
-
-
         ### Replay Buffer
-        self.replay_buffer_size = 10000  # Number of self-play games to keep in the replay buffer
+        self.replay_buffer_size = 3000  # Number of self-play games to keep in the replay buffer
         self.num_unroll_steps = 121  # Number of game moves to keep for every batch element
         self.td_steps = 121  # Number of steps in the future to take into account for calculating the target value
         self.PER = True  # Prioritized Replay (See paper appendix Training), select in priority the elements in the replay buffer which are unexpected for the network
@@ -105,12 +96,12 @@ class MuZeroConfig:
         self.use_last_model_value = False  # Use the last model to provide a fresher, stable n-step value (See paper appendix Reanalyze)
         self.reanalyse_on_gpu = False
 
-
-
         ### Adjust the self play / training ratio to avoid over/underfitting
         self.self_play_delay = 0  # Number of seconds to wait after each played game
         self.training_delay = 0  # Number of seconds to wait after each training step
-        self.ratio = 1  # Desired training steps per self played step ratio. Equivalent to a synchronous version, training can take much longer. Set it to None to disable it
+        self.ratio = None  # Desired training steps per self played step ratio. Equivalent to a synchronous version, training can take much longer. Set it to None to disable it
+
+
 
 
     def visit_softmax_temperature_fn(self, trained_steps):
@@ -121,6 +112,7 @@ class MuZeroConfig:
         Returns:
             Positive float.
         """
+        return 1
         if trained_steps < 0.5 * self.training_steps:
             return 1.0
         elif trained_steps < 0.75 * self.training_steps:
@@ -192,7 +184,6 @@ class Game(AbstractGame):
         Display the game observation.
         """
         self.env.render()
-        input("Press enter to take a step ")
 
     def human_to_action(self):
         """
@@ -231,12 +222,13 @@ class Game(AbstractGame):
         return self.env.play_mode(mode, games, verbose)
 
 class Chess:
-    def __init__(self):
+
+    def __init__(self, elo=1000):
         self._board = chess.Board()
 
     def to_play(self):
-        # return 1/True for white and -1/False for black
-        return self._who(self._board.turn)
+        # return 0 if self.player == 1 else 1
+        return 0 if self._board.turn else 1
 
     def reset(self):
         self._board.reset()
@@ -251,15 +243,10 @@ class Chess:
                     f"Illegal move {action} for board position {self._board.fen()}"
                 )
         self._board.push(move)
-
         observation = self._observation()
         reward = self._reward()
         done = self._board.is_game_over()
-
-        return observation, reward, done
-
-    def _who(self, turn):
-      return 1 if turn else -1
+        return observation, reward*20, done
 
     def _reward(self):
         outcome = self._board.outcome()
@@ -267,20 +254,27 @@ class Chess:
             if outcome.winner is None:
                 # draw return very little value
                 print(f"Draw")
-                return 1e-4
+                return 0
             else:
                 print(f"{outcome.winner} Win")
-                return self._who(outcome.winner)
+                return 1 if outcome.winner else -1
         return 0
 
 
     def _observation(self):
-        a = numpy.array([0]*64)
+        a = numpy.zeros((8,8))
         for sq,pc in self._board.piece_map().items():
-            a[sq] = (pc.piece_type-1)
+            a[int(sq/8)][int(sq%8)] = (pc.piece_type)
             if not pc.color:
-                a[sq] = a[sq] * -1
-        return (a.reshape(1,1,64))
+                a[int(sq/8)][int(sq%8)] = a[int(sq/8)][int(sq%8)] * -1
+        board_player1 = numpy.where(a > 0, 1, 0)
+        board_player2 = numpy.where(a < 0, 1, 0)
+        if self._board.turn:
+            board_to_play = numpy.full((8,8), 1)
+        else:
+            board_to_play = numpy.full((8,8), -1)
+        return numpy.array([board_player1, board_player2, board_to_play], dtype="int32")
+
 
     def legal_actions(self):
         return [self._from_move(move) for move in self._board.legal_moves]
@@ -327,7 +321,7 @@ class Chess:
     def expert_agent(self):
         from stockfish import Stockfish
         self._stockfish = Stockfish(parameters={"Threads": 2, "Minimum Thinking Time": 30})
-        self._stockfish.set_elo_rating(elo)
+        self._stockfish.set_elo_rating(1000)
         self._stockfish.set_fen_position(self._board.fen())
         uci_move = self._stockfish.get_best_move()
         move = self._move_from_uci(uci_move.strip())
