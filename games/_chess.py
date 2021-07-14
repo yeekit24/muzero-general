@@ -30,15 +30,15 @@ class MuZeroConfig:
 
 
         ### Self-Play
-        self.num_workers = 2 # Number of simultaneous threads/workers self-playing to feed the replay buffer
+        self.num_workers = 4 # Number of simultaneous threads/workers self-playing to feed the replay buffer
         self.selfplay_on_gpu = True
-        self.max_moves = 300  # Maximum number of moves if game is not finished before
+        self.max_moves = 400  # Maximum number of moves if game is not finished before
         self.num_simulations = 400  # Number of future moves self-simulated
-        self.discount = 1  # Chronological discount of the reward
+        self.discount = 0.997  # Chronological discount of the reward
         self.temperature_threshold = None  # Number of moves before dropping the temperature given by visit_softmax_temperature_fn to 0 (ie selecting the best action). If None, visit_softmax_temperature_fn is used every time
 
         # Root prior exploration noise
-        self.root_dirichlet_alpha = 0.3
+        self.root_dirichlet_alpha = 0.25
         self.root_exploration_fraction = 0.25
 
         # UCB formula
@@ -53,14 +53,15 @@ class MuZeroConfig:
 
         # Residual Network
         self.downsample = False  # Downsample observations before representation network, False / "CNN" (lighter) / "resnet" (See paper appendix Network Architecture)
-        self.blocks = 1  # Number of blocks in the ResNet
-        self.channels = 16  # Number of channels in the ResNet
-        self.reduced_channels_reward = 16  # Number of channels in reward head
-        self.reduced_channels_value = 16  # Number of channels in value head
-        self.reduced_channels_policy = 16  # Number of channels in policy head
-        self.resnet_fc_reward_layers = [8]  # Define the hidden layers in the reward head of the dynamic network
-        self.resnet_fc_value_layers = [8]  # Define the hidden layers in the value head of the prediction network
-        self.resnet_fc_policy_layers = [8]  # Define the hidden layers in the policy head of the prediction network
+        self.blocks = 3  # Number of blocks in the ResNet
+        self.channels = 64  # Number of channels in the ResNet
+        self.reduced_channels_reward = 2  # Number of channels in reward head
+        self.reduced_channels_value = 2  # Number of channels in value head
+        self.reduced_channels_policy = 4  # Number of channels in policy head
+        self.resnet_fc_reward_layers = [64]  # Define the hidden layers in the reward head of the dynamic network
+        self.resnet_fc_value_layers = [64]  # Define the hidden layers in the value head of the prediction network
+        self.resnet_fc_policy_layers = [64]  # Define the hidden layers in the policy head of the prediction network
+        self.downsample = False  # Downsample observations before representation network, False / "CNN" (lighter) / "resnet" (See paper appendix Network Architecture)
 
         # Fully Connected Network
         self.encoding_size = 32
@@ -270,13 +271,15 @@ class Chess:
 
 
     def _observation(self):
-        a = numpy.zeros((8,8))
+        board_player1 = numpy.zeros((8,8))
+        board_player2 = numpy.zeros((8,8))
         for sq,pc in self._board.piece_map().items():
-            a[int(sq/8)][int(sq%8)] = (pc.piece_type)
-            if not pc.color:
-                a[int(sq/8)][int(sq%8)] = a[int(sq/8)][int(sq%8)] * -1
-        board_player1 = numpy.where(a > 0, a, 0)
-        board_player2 = numpy.where(a < 0, -a, 0)
+            if pc.color:
+                board_player1[int(sq/8)][int(sq%8)] = (pc.piece_type)
+            else:
+                board_player2[int(sq/8)][int(sq%8)] = (pc.piece_type)
+        # board_player1 = numpy.where(a > 0, a, 0)
+        # board_player2 = numpy.where(a < 0, -a, 0)
         if self._board.turn:
             board_to_play = numpy.full((8,8), 1)
         else:
