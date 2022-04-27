@@ -79,7 +79,7 @@ class AbstractGame(ABC):
         """
         choice = input(f"Enter the action to play for the player {self.to_play()}: ")
         while int(choice) not in self.legal_actions():
-            choice = input("Ilegal action. Enter another action : ")
+            choice = input("Illegal action. Enter another action : ")
         return int(choice)
 
     def expert_agent(self):
